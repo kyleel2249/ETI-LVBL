@@ -9,7 +9,7 @@ export function ema(v: number[], n: number): (number | null)[] {
   const out: (number | null)[] = [];
   let prev: number | null = null;
   v.forEach((x, i) => {
-    if (i < n - 1) return out.push(null);
+    if (i < n - 1) { out.push(null); return; }
     if (prev === null) prev = v.slice(0, n).reduce((a, b) => a + b, 0) / n;
     else prev = x * k + prev * (1 - k);
     out.push(prev);
