@@ -5,13 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
+    "start": "node scripts/start.mjs",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "preview": "vite preview",
+    "preview": "node scripts/start.mjs",
+    "production": "node scripts/start.mjs --production",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "health": "node scripts/health.mjs",
+    "diagnostics": "node scripts/diagnostics.mjs",
+    "api:check": "node scripts/api-check.mjs",
+    "deploy:cloudflare": "npm run build && npx wrangler deploy --config .output/server/wrangler.json",
+    "deploy": "npm run deploy:cloudflare"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -92,5 +101,8 @@
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5",
     "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=20.19.0"
   }
 }

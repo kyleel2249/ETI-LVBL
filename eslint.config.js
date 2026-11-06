@@ -37,4 +37,6 @@ export default tseslint.config(
     },
   },
   eslintPluginPrettier,
+  // Formatting is advisory (run `npm run format`); it must not block CI or Windows users.
+  { rules: { "prettier/prettier": "warn" } },
 );
