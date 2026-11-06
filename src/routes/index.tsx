@@ -27,7 +27,7 @@ function Markets() {
   const { data: crypto } = useSuspenseQuery(cryptoQ);
   const { data: equity } = useQuery(equityQ);
   const { ticks, status } = useBinanceLive(CRYPTO_WATCHLIST);
-  const rows = (crypto ?? []).map((t) => ({ const k = ticks[t.symbol]; return k ? { ...t, last: k.price, changePct: k.changePct, ts: k.ts } : t; }));
+  const rows = (crypto ?? []).map((t) => { const k = ticks[t.symbol]; return k ? { ...t, last: k.price, changePct: k.changePct, ts: k.ts } : t; });
   const up = rows.filter((r) => r.changePct > 0).length;
   const avg = rows.reduce((a, r) => a + r.changePct, 0) / (rows.length || 1);
   const range = rows.reduce((a, r) => a + (r.high - r.low) / (r.low || 1), 0) / (rows.length || 1) * 100;
