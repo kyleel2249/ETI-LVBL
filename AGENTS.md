@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## ETI architecture
+- Provider calls (Binance, Alpaca) live only in `src/lib/eti/market.functions.ts` server functions; keys never reach the browser.
+- Pure analytics (indicators, data quality, risk engine) live in `src/lib/eti/*.ts` with no I/O so they stay unit-testable.
+- Never fabricate market data: missing/unconfigured providers render explicit "not configured"/error states.
+- Paper ledger is browser-local until Lovable Cloud is enabled; risk engine gates every paper order.

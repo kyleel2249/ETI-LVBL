@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PaperRouteImport } from './routes/paper'
+import { Route as ProvidersRouteImport } from './routes/providers'
+import { Route as AssetSymbolRouteImport } from './routes/asset.$symbol'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaperRoute = PaperRouteImport.update({
+  id: '/paper',
+  path: '/paper',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProvidersRoute = ProvidersRouteImport.update({
+  id: '/providers',
+  path: '/providers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssetSymbolRoute = AssetSymbolRouteImport.update({
+  id: '/asset/$symbol',
+  path: '/asset/$symbol',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/paper': typeof PaperRoute
+  '/providers': typeof ProvidersRoute
+  '/asset/$symbol': typeof AssetSymbolRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/paper': typeof PaperRoute
+  '/providers': typeof ProvidersRoute
+  '/asset/$symbol': typeof AssetSymbolRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/paper': typeof PaperRoute
+  '/providers': typeof ProvidersRoute
+  '/asset/$symbol': typeof AssetSymbolRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/paper' | '/providers' | '/asset/$symbol'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/paper' | '/providers' | '/asset/$symbol'
+  id: '__root__' | '/' | '/paper' | '/providers' | '/asset/$symbol'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PaperRoute: typeof PaperRoute
+  ProvidersRoute: typeof ProvidersRoute
+  AssetSymbolRoute: typeof AssetSymbolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/paper': {
+      id: '/paper'
+      path: '/paper'
+      fullPath: '/paper'
+      preLoaderRoute: typeof PaperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/providers': {
+      id: '/providers'
+      path: '/providers'
+      fullPath: '/providers'
+      preLoaderRoute: typeof ProvidersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/asset/$symbol': {
+      id: '/asset/$symbol'
+      path: '/asset/$symbol'
+      fullPath: '/asset/$symbol'
+      preLoaderRoute: typeof AssetSymbolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PaperRoute: PaperRoute,
+  ProvidersRoute: ProvidersRoute,
+  AssetSymbolRoute: AssetSymbolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
