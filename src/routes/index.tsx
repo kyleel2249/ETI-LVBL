@@ -20,6 +20,7 @@ export const Route = createFileRoute("/")({
     ],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(cryptoQ).catch(() => null),
+  ssr: false,
   component: Markets,
 });
 
