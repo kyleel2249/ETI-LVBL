@@ -22,12 +22,12 @@ export function rsi(v: number[], n = 14): number | null {
   if (v.length <= n) return null;
   let g = 0, l = 0;
   for (let i = 1; i <= n; i++) {
-    const d = v[i] - v[i - 1];
+    const d = v[i]! - v[i - 1]!;
     if (d >= 0) g += d; else l -= d;
   }
   g /= n; l /= n;
   for (let i = n + 1; i < v.length; i++) {
-    const d = v[i] - v[i - 1];
+    const d = v[i]! - v[i - 1]!;
     g = (g * (n - 1) + Math.max(d, 0)) / n;
     l = (l * (n - 1) + Math.max(-d, 0)) / n;
   }
@@ -47,16 +47,16 @@ export function macd(v: number[]) {
 
 export function atr(c: Candle[], n = 14): number | null {
   if (c.length <= n) return null;
-  const tr = c.slice(1).map((k, i) => Math.max(k.h - k.l, Math.abs(k.h - c[i].c), Math.abs(k.l - c[i].c)));
+  const tr = c.slice(1).map((k, i) => Math.max(k.h - k.l, Math.abs(k.h - c[i]!.c), Math.abs(k.l - c[i]!.c)));
   let a = tr.slice(0, n).reduce((x, y) => x + y, 0) / n;
-  for (let i = n; i < tr.length; i++) a = (a * (n - 1) + tr[i]) / n;
+  for (let i = n; i < tr.length; i++) a = (a * (n - 1) + tr[i]!) / n;
   return a;
 }
 
 /** Annualisation-free realised volatility of log returns (stdev, %) */
 export function volatility(v: number[]): number | null {
   if (v.length < 3) return null;
-  const r = v.slice(1).map((x, i) => Math.log(x / v[i]));
+  const r = v.slice(1).map((x, i) => Math.log(x / v[i]!));
   const m = r.reduce((a, b) => a + b, 0) / r.length;
   const s = Math.sqrt(r.reduce((a, b) => a + (b - m) ** 2, 0) / (r.length - 1));
   return s * 100;
