@@ -18,7 +18,7 @@ Or manually: `npm install`, `npm start`, `npm run health`.
 | `npm run production` | Force a fresh build, then serve |
 | `npm run build` | Build; Cloudflare target by default, `NITRO_PRESET=node-server` for local |
 | `npm run typecheck` / `lint` / `test` | Quality gates |
-| `npm run health` | Probes `/`, `/providers`, `/paper` on a running instance |
+| `npm run health` | Probes all main pages on a running instance |
 | `npm run diagnostics` | Node/npm/PATH/deps/.npmrc/PowerShell policy checks |
 | `npm run api:check` | Real Binance + Alpaca-paper connectivity (never prints secrets) |
 | `npm run deploy:cloudflare` | Build and `wrangler deploy` (requires `wrangler login`) |

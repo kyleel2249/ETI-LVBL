@@ -1,6 +1,6 @@
 // Checks a running ETI instance. Usage: npm run health [-- http://localhost:4173]
 const base = process.argv[2] ?? process.env.ETI_URL ?? "http://localhost:4173";
-const paths = ["/", "/providers", "/paper"];
+const paths = ["/", "/providers", "/paper", "/trading", "/macro", "/asset/BTCUSDT"];
 let bad = 0;
 for (const p of paths) {
   try {

@@ -10,13 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MacroRouteImport } from './routes/macro'
 import { Route as PaperRouteImport } from './routes/paper'
 import { Route as ProvidersRouteImport } from './routes/providers'
+import { Route as TradingRouteImport } from './routes/trading'
 import { Route as AssetSymbolRouteImport } from './routes/asset.$symbol'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MacroRoute = MacroRouteImport.update({
+  id: '/macro',
+  path: '/macro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaperRoute = PaperRouteImport.update({
@@ -29,6 +36,11 @@ const ProvidersRoute = ProvidersRouteImport.update({
   path: '/providers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TradingRoute = TradingRouteImport.update({
+  id: '/trading',
+  path: '/trading',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssetSymbolRoute = AssetSymbolRouteImport.update({
   id: '/asset/$symbol',
   path: '/asset/$symbol',
@@ -37,35 +49,51 @@ const AssetSymbolRoute = AssetSymbolRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/macro': typeof MacroRoute
   '/paper': typeof PaperRoute
   '/providers': typeof ProvidersRoute
+  '/trading': typeof TradingRoute
   '/asset/$symbol': typeof AssetSymbolRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/macro': typeof MacroRoute
   '/paper': typeof PaperRoute
   '/providers': typeof ProvidersRoute
+  '/trading': typeof TradingRoute
   '/asset/$symbol': typeof AssetSymbolRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/macro': typeof MacroRoute
   '/paper': typeof PaperRoute
   '/providers': typeof ProvidersRoute
+  '/trading': typeof TradingRoute
   '/asset/$symbol': typeof AssetSymbolRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/paper' | '/providers' | '/asset/$symbol'
+  fullPaths:
+    '/' | '/macro' | '/paper' | '/providers' | '/trading' | '/asset/$symbol'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/paper' | '/providers' | '/asset/$symbol'
-  id: '__root__' | '/' | '/paper' | '/providers' | '/asset/$symbol'
+  to: '/' | '/macro' | '/paper' | '/providers' | '/trading' | '/asset/$symbol'
+  id:
+    | '__root__'
+    | '/'
+    | '/macro'
+    | '/paper'
+    | '/providers'
+    | '/trading'
+    | '/asset/$symbol'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MacroRoute: typeof MacroRoute
   PaperRoute: typeof PaperRoute
   ProvidersRoute: typeof ProvidersRoute
+  TradingRoute: typeof TradingRoute
   AssetSymbolRoute: typeof AssetSymbolRoute
 }
 
@@ -76,6 +104,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/macro': {
+      id: '/macro'
+      path: '/macro'
+      fullPath: '/macro'
+      preLoaderRoute: typeof MacroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/paper': {
@@ -92,6 +127,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProvidersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trading': {
+      id: '/trading'
+      path: '/trading'
+      fullPath: '/trading'
+      preLoaderRoute: typeof TradingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/asset/$symbol': {
       id: '/asset/$symbol'
       path: '/asset/$symbol'
@@ -104,8 +146,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MacroRoute: MacroRoute,
   PaperRoute: PaperRoute,
   ProvidersRoute: ProvidersRoute,
+  TradingRoute: TradingRoute,
   AssetSymbolRoute: AssetSymbolRoute,
 }
 export const routeTree = rootRouteImport

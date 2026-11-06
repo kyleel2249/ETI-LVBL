@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 const NAV = [
   { to: "/", label: "Markets" },
   { to: "/paper", label: "Paper & Risk" },
+  { to: "/trading", label: "Order desk" },
+  { to: "/macro", label: "Macro" },
   { to: "/providers", label: "Providers" },
 ] as const;
 

@@ -35,3 +35,6 @@ dist-ssr
 .env.*
 !.env.example
 .dev.vars
+
+# ETI local data (SQLite, backups)
+data/

@@ -9,10 +9,15 @@ import { Input } from "@/components/ui/input";
 import { getCandles, getOrderBook } from "@/lib/eti/market.functions";
 import { runCouncil, type CouncilVerdict } from "@/lib/eti/council.functions";
 import { snapshot, sma } from "@/lib/eti/indicators";
-import { assessCandles } from "@/lib/eti/quality";
+import { assessCandles, dataStatusOf } from "@/lib/eti/quality";
+import { decide, type DataStatus } from "@/lib/eti/decision";
+import { ForecastPanel } from "@/components/eti/ForecastPanel";
+import { getMacro } from "@/lib/eti/trading.functions";
 import { evaluateTrade, suggestQty } from "@/lib/eti/risk";
 import { usePaper } from "@/lib/eti/paper";
-import { useBinanceLive, fmtPrice } from "@/lib/eti/live";
+import { useBinanceLive, useBinanceMarketStream, fmtPrice } from "@/lib/eti/live";
+import { mergeKline } from "@/lib/eti/stream";
+import { analyzeBook } from "@/lib/eti/orderbook";
 import { INTERVALS, type Interval } from "@/lib/eti/types";
 
 export const Route = createFileRoute("/asset/$symbol")({
@@ -38,19 +43,25 @@ function Asset() {
   const bookQ = useQuery({ queryKey: ["book", symbol], queryFn: () => getOrderBook({ data: { symbol } }), refetchInterval: 5_000, enabled: isCrypto });
   const { ticks, status } = useBinanceLive(isCrypto ? [symbol] : []);
 
-  const candles = candlesQ.data?.candles ?? [];
+  const stream = useBinanceMarketStream(isCrypto ? symbol : null, interval);
+  const candles = useMemo(() => mergeKline(candlesQ.data?.candles ?? [], isCrypto ? stream.state.kline : null), [candlesQ.data, stream.state.kline, isCrypto]);
   const snap = useMemo(() => (candles.length > 30 ? snapshot(candles) : null), [candles]);
   const quality = useMemo(() => assessCandles(candles, interval), [candles, interval]);
+  const dataStatus = useMemo(() => dataStatusOf(quality), [quality]);
+  const macroQ = useQuery({ queryKey: ["macro"], queryFn: () => getMacro(), staleTime: 3_600_000, retry: 0 });
+  const macro = useMemo(() => (macroQ.data?.snapshot ? { backdrop: macroQ.data.snapshot.backdrop, signals: macroQ.data.snapshot.signals.map((x) => `${x.label}: ${x.stance} — ${x.evidence}`), limitations: macroQ.data.snapshot.limitations } : null), [macroQ.data]);
   const live = ticks[symbol]?.price ?? snap?.last ?? 0;
   const liveTs = ticks[symbol]?.ts ?? candles.at(-1)?.t ?? 0;
 
+  const liveDepth = stream.status === "live" ? stream.state.depth : null;
+  const bookSrc = liveDepth ?? bookQ.data;
   const book = useMemo(() => {
-    const b = bookQ.data;
+    const b = bookSrc;
     if (!b || !b.bids.length || !b.asks.length) return null;
     const bidV = b.bids.reduce((a, [p, q]) => a + p * q, 0), askV = b.asks.reduce((a, [p, q]) => a + p * q, 0);
     const mid = (b.bids[0]![0] + b.asks[0]![0]) / 2;
-    return { bidV, askV, imbalance: (bidV - askV) / (bidV + askV), spreadBps: ((b.asks[0]![0] - b.bids[0]![0]) / mid) * 1e4, top: b };
-  }, [bookQ.data]);
+    return { bidV, askV, imbalance: (bidV - askV) / (bidV + askV), spreadBps: ((b.asks[0]![0] - b.bids[0]![0]) / mid) * 1e4, top: b, analytics: analyzeBook(b), source: liveDepth ? "live stream" : "REST snapshot" };
+  }, [bookSrc, liveDepth]);
 
   const chart = useMemo(() => {
     const closes = candles.map((c) => c.c);
@@ -127,7 +138,7 @@ function Asset() {
         </Panel>
 
         {isCrypto && (
-          <Panel title="Order book liquidity" right={<span className="label-caps">top 50 levels</span>}>
+          <Panel title="Order book liquidity" right={<span className="label-caps">{book ? `${book.top.bids.length} levels · ${book.source}` : "connecting"}</span>}>
             {!book ? <p className="text-sm text-muted-foreground">Loading depth…</p> : (
               <div className="space-y-3 text-sm">
                 <div className="flex h-2 overflow-hidden rounded-sm">
@@ -139,6 +150,8 @@ function Asset() {
                   <Kv k="Spread" v={`${book.spreadBps.toFixed(2)} bps`} />
                   <Kv k="Bid depth" v={`$${Math.round(book.bidV).toLocaleString()}`} />
                   <Kv k="Ask depth" v={`$${Math.round(book.askV).toLocaleString()}`} />
+                  {book.analytics && <Kv k="Large orders (≥5× median)" v={book.analytics.largeOrders.length ? `${book.analytics.largeOrders.length} · biggest ${book.analytics.largeOrders[0]!.side} @ ${fmtPrice(book.analytics.largeOrders[0]!.price)}` : "none observed"} />}
+                  {book.analytics && <Kv k="Top-3 concentration" v={`bid ${(book.analytics.concentration.bid * 100).toFixed(0)}% · ask ${(book.analytics.concentration.ask * 100).toFixed(0)}%`} />}
                 </dl>
                 <div className="num grid grid-cols-2 gap-2 text-xs">
                   <div>{book.top.bids.slice(0, 6).map(([p, q]) => <div key={p} className="flex justify-between text-bull"><span>{fmtPrice(p)}</span><span className="text-muted-foreground">{q.toFixed(4)}</span></div>)}</div>
@@ -149,7 +162,8 @@ function Asset() {
           </Panel>
         )}
 
-        <CouncilPanel symbol={symbol} interval={interval} source={candlesQ.data?.source ?? ""} snap={snap} quality={quality} book={book ? { imbalance: book.imbalance, spreadBps: book.spreadBps } : null} className={isCrypto ? "lg:col-span-2" : "lg:col-span-3"} />
+        <CouncilPanel symbol={symbol} interval={interval} source={candlesQ.data?.source ?? ""} snap={snap} quality={quality} dataStatus={dataStatus} macro={macro} book={book ? { imbalance: book.imbalance, spreadBps: book.spreadBps } : null} className={isCrypto ? "lg:col-span-2" : "lg:col-span-3"} />
+        <ForecastPanel symbol={symbol} interval={interval} candles={candles} dataOk={dataStatus === "fresh" || dataStatus === "incomplete"} className="lg:col-span-3" />
 
         <TicketPanel symbol={symbol} price={live} priceTs={liveTs} atr={snap?.atr ?? null} />
       </div>
@@ -161,17 +175,19 @@ function Kv({ k, v }: { k: string; v: React.ReactNode }) {
   return <div><dt className="label-caps">{k}</dt><dd className="num mt-0.5">{v}</dd></div>;
 }
 
-function CouncilPanel({ symbol, interval, source, snap, quality, book, className }: { symbol: string; interval: string; source: string; snap: ReturnType<typeof snapshot> | null; quality: { score: number; issues: string[] }; book: { imbalance: number; spreadBps: number } | null; className?: string }) {
+function CouncilPanel({ symbol, interval, source, snap, quality, dataStatus, macro, book, className }: { dataStatus: DataStatus; macro: { backdrop: string; signals: string[]; limitations: string[] } | null; symbol: string; interval: string; source: string; snap: ReturnType<typeof snapshot> | null; quality: { score: number; issues: string[] }; book: { imbalance: number; spreadBps: number } | null; className?: string }) {
   const [verdict, setVerdict] = useState<CouncilVerdict | null>(null);
   const [busy, setBusy] = useState(false);
   const convene = async () => {
     if (!snap) return;
     setBusy(true);
     try {
-      setVerdict(await runCouncil({ data: { symbol, interval, source, snapshot: snap as unknown as Record<string, unknown>, quality, book } }));
+      setVerdict(await runCouncil({ data: { symbol, interval, source, snapshot: { ...(snap as unknown as Record<string, unknown>), ...(macro ? { macro } : {}) }, quality, book } }));
     } catch (e) { toast.error((e as Error).message); }
     finally { setBusy(false); }
   };
+  const decision = verdict ? decide({ members: verdict.members, dataStatus, qualityScore: quality.score, risk: null }) : null;
+  const dTone = decision ? (/BUY/.test(decision.decision) ? "text-bull" : /SELL/.test(decision.decision) ? "text-bear" : "text-warn") : "";
   const tone = (s: string) => (s === "bullish" ? "text-bull" : s === "bearish" ? "text-bear" : "text-muted-foreground");
   return (
     <Panel title="AI Trading Council · 12 analysts" className={className ?? ""}
@@ -184,6 +200,13 @@ function CouncilPanel({ symbol, interval, source, snap, quality, book, className
             <span className={`text-2xl font-semibold capitalize ${tone(verdict.consensus)}`}>{verdict.consensus}</span>
             <span className="num text-sm text-muted-foreground">{Math.round(verdict.confidence)}% confidence</span>
           </div>
+          {decision && (
+            <div className="rounded-sm border border-border p-3" role="status">
+              <div className="flex items-baseline justify-between"><span className="label-caps">ETI decision (evidence-weighted, risk-gated)</span><span className={`num text-lg font-semibold ${dTone}`}>{decision.decision}</span></div>
+              <ul className="mt-1 list-disc pl-5 text-xs text-muted-foreground">{decision.rationale.map((r, i) => <li key={i}>{r}</li>)}</ul>
+              {decision.dissenters.length > 0 && <p className="mt-1 text-xs text-muted-foreground">Dissent: {decision.dissenters.join(", ")}</p>}
+            </div>
+          )}
           <div className="grid gap-3 md:grid-cols-3">
             {verdict.scenarios.map((s) => (
               <div key={s.name} className="rounded-sm border border-border p-3">

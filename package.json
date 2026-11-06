@@ -19,8 +19,14 @@
     "health": "node scripts/health.mjs",
     "diagnostics": "node scripts/diagnostics.mjs",
     "api:check": "node scripts/api-check.mjs",
-    "deploy:cloudflare": "npm run build && npx wrangler deploy --config .output/server/wrangler.json",
-    "deploy": "npm run deploy:cloudflare"
+    "deploy:cloudflare": "node scripts/cf-deploy.mjs",
+    "deploy": "node scripts/cf-deploy.mjs",
+    "db:migrate": "node scripts/db.mjs migrate",
+    "db:check": "node scripts/db.mjs check",
+    "db:backup": "node scripts/db.mjs backup",
+    "db:restore": "node scripts/db.mjs restore",
+    "db:seed": "node scripts/db.mjs seed",
+    "deploy:check": "node scripts/cf-deploy.mjs --dry-run"
   },
   "overrides": {
     "rolldown": "1.2.1"

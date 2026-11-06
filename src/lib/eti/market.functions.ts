@@ -98,7 +98,7 @@ export const getCandles = createServerFn({ method: "GET" })
     z
       .object({
         symbol: symbolSchema,
-        interval: z.enum(["15m", "1h", "4h", "1d"]),
+        interval: z.enum(["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w"]),
         limit: z.number().int().min(50).max(1000).optional(),
       })
       .parse(d),
@@ -117,8 +117,8 @@ export const getCandles = createServerFn({ method: "GET" })
     }
     const h = alpacaHeaders();
     if (!h) throw new Error("Alpaca is not configured — add paper API keys to load equity data.");
-    const tf = { "15m": "15Min", "1h": "1Hour", "4h": "4Hour", "1d": "1Day" }[data.interval];
-    const days = { "15m": 10, "1h": 40, "4h": 160, "1d": 600 }[data.interval]!;
+    const tf = { "1m": "1Min", "5m": "5Min", "15m": "15Min", "30m": "30Min", "1h": "1Hour", "4h": "4Hour", "1d": "1Day", "1w": "1Week" }[data.interval];
+    const days = { "1m": 2, "5m": 5, "15m": 10, "30m": 20, "1h": 40, "4h": 160, "1d": 600, "1w": 2000 }[data.interval]!;
     const start = new Date(Date.now() - days * 864e5).toISOString();
     const r = await fetch(
       `${ALPACA_DATA}/v2/stocks/${data.symbol}/bars?timeframe=${tf}&start=${start}&limit=${limit}&feed=iex&adjustment=split&sort=asc`,

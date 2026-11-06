@@ -8,3 +8,8 @@
 - **Binance unreachable / HTTP 451** — region/network block; ETI shows an error state, never fake prices.
 - **Port in use** — `stop.bat`, or set `PORT`.
 - **Health check fails** — start ETI first (`npm start`).
+- **Storage says "not durable"** — Node < 22.13 has no `node:sqlite` (falls back to a JSON file) or D1 is not bound on Cloudflare.
+- **`/trading` says credentials not configured** — add the venue's keys to `.env` and restart (`npm start`).
+- **Order rejected: "Price data fresh"** — the server's price is older than `DATA_MAX_AGE_SECONDS`; check the provider on `/providers`.
+- **Circuit open** — a provider failed repeatedly; ETI pauses calls for 30 s (see Providers → Circuit breakers).
+- **`wrangler` not found** — `npx` downloads it on first deploy; needs network access.

@@ -27,5 +27,5 @@ export type OrderBook = { bids: [number, number][]; asks: [number, number][]; ts
 
 export const CRYPTO_WATCHLIST = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT"];
 export const EQUITY_WATCHLIST = ["SPY", "QQQ", "AAPL", "MSFT", "NVDA", "TSLA"];
-export const INTERVALS = ["15m", "1h", "4h", "1d"] as const;
+export const INTERVALS = ["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w"] as const;
 export type Interval = (typeof INTERVALS)[number];
