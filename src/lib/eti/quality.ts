@@ -12,7 +12,7 @@ export function assessCandles(c: Candle[], interval: string, now = Date.now()): 
   c.forEach((k, i) => {
     if (![k.o, k.h, k.l, k.c, k.v].every(Number.isFinite) || k.h < Math.max(k.o, k.c) || k.l > Math.min(k.o, k.c) || k.l <= 0 || k.v < 0) bad++;
     if (i > 0) {
-      const d = k.t - c[i - 1].t;
+      const d = k.t - c[i - 1]!.t;
       if (d === 0) dupes++;
       else if (d > step * 1.5) gaps++;
     }

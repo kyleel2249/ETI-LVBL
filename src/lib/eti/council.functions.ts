@@ -30,7 +30,7 @@ const input = z.object({
 export const runCouncil = createServerFn({ method: "POST" })
   .inputValidator((d: z.infer<typeof input>) => input.parse(d))
   .handler(async ({ data }): Promise<CouncilVerdict> => {
-    const key = process.env.LOVABLE_API_KEY;
+    const key = process.env['LOVABLE_API_KEY'];
     if (!key) throw new Error("AI is not configured");
     const system = `You are ETI's AI Trading Council: ${COUNCIL.join(", ")}. Each member independently analyses ONLY the supplied measured data. Never invent prices, news, fundamentals, or events not in the data — if a member lacks data (e.g. fundamentals or news for crypto), they must say so and stay neutral with low confidence. Probabilities are estimates, not guarantees. Members must disagree when evidence is mixed. This is research for paper trading only.`;
     const str = { type: "string" };

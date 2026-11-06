@@ -26,6 +26,7 @@ export const Route = createFileRoute("/asset/$symbol")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  ssr: false,
   component: Asset,
 });
 
@@ -47,8 +48,8 @@ function Asset() {
     const b = bookQ.data;
     if (!b || !b.bids.length || !b.asks.length) return null;
     const bidV = b.bids.reduce((a, [p, q]) => a + p * q, 0), askV = b.asks.reduce((a, [p, q]) => a + p * q, 0);
-    const mid = (b.bids[0][0] + b.asks[0][0]) / 2;
-    return { bidV, askV, imbalance: (bidV - askV) / (bidV + askV), spreadBps: ((b.asks[0][0] - b.bids[0][0]) / mid) * 1e4, top: b };
+    const mid = (b.bids[0]![0] + b.asks[0]![0]) / 2;
+    return { bidV, askV, imbalance: (bidV - askV) / (bidV + askV), spreadBps: ((b.asks[0]![0] - b.bids[0]![0]) / mid) * 1e4, top: b };
   }, [bookQ.data]);
 
   const chart = useMemo(() => {
@@ -173,7 +174,7 @@ function CouncilPanel({ symbol, interval, source, snap, quality, book, className
   };
   const tone = (s: string) => (s === "bullish" ? "text-bull" : s === "bearish" ? "text-bear" : "text-muted-foreground");
   return (
-    <Panel title="AI Trading Council · 12 analysts" className={className}
+    <Panel title="AI Trading Council · 12 analysts" className={className ?? ""}
       right={<Button size="sm" onClick={convene} disabled={!snap || busy} className="glow">{busy ? "Deliberating…" : verdict ? "Reconvene" : "Convene council"}</Button>}>
       {!verdict ? (
         <p className="text-sm text-muted-foreground">The council reviews only the measured indicators, data quality and liquidity on this page — no invented news or prices.</p>

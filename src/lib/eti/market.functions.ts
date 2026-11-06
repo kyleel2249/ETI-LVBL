@@ -22,8 +22,8 @@ async function binance<T>(path: string): Promise<T> {
 }
 
 function alpacaHeaders() {
-  const key = process.env.ALPACA_PAPER_API_KEY;
-  const secret = process.env.ALPACA_PAPER_API_SECRET;
+  const key = process.env['ALPACA_PAPER_API_KEY'];
+  const secret = process.env['ALPACA_PAPER_API_SECRET'];
   if (!key || !secret) return null;
   return { "APCA-API-KEY-ID": key, "APCA-API-SECRET-KEY": secret };
 }
@@ -66,7 +66,7 @@ export const getOrderBook = createServerFn({ method: "GET" })
   .inputValidator((d: { symbol: string }) => z.object({ symbol: symbolSchema }).parse(d))
   .handler(async ({ data }): Promise<OrderBook> => {
     const j = await binance<any>(`/api/v3/depth?symbol=${data.symbol}&limit=50`);
-    return { bids: j.bids.map((b: string[]) => [+b[0], +b[1]]), asks: j.asks.map((a: string[]) => [+a[0], +a[1]]), ts: Date.now() };
+    return { bids: j.bids.map((b: string[]) => [+b[0]!, +b[1]!]), asks: j.asks.map((a: string[]) => [+a[0]!, +a[1]!]), ts: Date.now() };
   });
 
 export const getEquitySnapshots = createServerFn({ method: "GET" })

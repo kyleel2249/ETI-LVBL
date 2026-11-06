@@ -17,6 +17,7 @@ export const Route = createFileRoute("/paper")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
+  ssr: false,
   component: PaperDesk,
 });
 
@@ -24,7 +25,7 @@ function PaperDesk() {
   const p = usePaper();
   const syms = [...new Set(p.state.positions.map((x) => x.symbol).filter((s) => s.endsWith("USDT")))];
   const { ticks } = useBinanceLive(syms);
-  const unreal = p.state.positions.reduce((a, x) => a + (ticks[x.symbol] ? pnlOf(x, ticks[x.symbol].price) : 0), 0);
+  const unreal = p.state.positions.reduce((a, x) => a + (ticks[x.symbol] ? pnlOf(x, ticks[x.symbol]!.price) : 0), 0);
   const equity = p.state.cash + unreal;
   const wins = p.state.history.filter((t) => t.pnl > 0).length;
 
