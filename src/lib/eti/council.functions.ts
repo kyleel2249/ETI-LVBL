@@ -33,38 +33,53 @@ export const runCouncil = createServerFn({ method: "POST" })
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("AI is not configured");
     const system = `You are ETI's AI Trading Council: ${COUNCIL.join(", ")}. Each member independently analyses ONLY the supplied measured data. Never invent prices, news, fundamentals, or events not in the data — if a member lacks data (e.g. fundamentals or news for crypto), they must say so and stay neutral with low confidence. Probabilities are estimates, not guarantees. Members must disagree when evidence is mixed. This is research for paper trading only.`;
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const str = { type: "string" };
+    const num = { type: "number" };
+    const obj = (props: Record<string, unknown>) => ({ type: "object", additionalProperties: false, required: Object.keys(props), properties: props });
+    const schema = obj({
+      members: { type: "array", items: obj({ role: str, stance: { type: "string", enum: ["bullish", "bearish", "neutral"] }, confidence: num, reasoning: str }) },
+      consensus: { type: "string", enum: ["bullish", "bearish", "neutral"] },
+      confidence: num,
+      scenarios: { type: "array", items: obj({ name: str, probability: num, description: str }) },
+      plan: obj({ bias: str, entryZone: str, invalidation: str, targets: str }),
+      dissent: str, disclaimer: str,
+    });
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: { "Lovable-API-Key": key, Authorization: `Bearer ${key}`, "Content-Type": "application/json", "X-Lovable-AIG-SDK": "fetch" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: system }, { role: "user", content: JSON.stringify(data) }],
-        tools: [{
-          type: "function",
-          function: {
-            name: "verdict", description: "Return the council verdict",
-            parameters: {
-              type: "object", required: ["members", "consensus", "confidence", "scenarios", "plan", "dissent", "disclaimer"],
-              properties: {
-                members: { type: "array", items: { type: "object", required: ["role", "stance", "confidence", "reasoning"], properties: {
-                  role: { type: "string" }, stance: { type: "string", enum: ["bullish", "bearish", "neutral"] }, confidence: { type: "number", description: "0-100" }, reasoning: { type: "string", description: "1-2 sentences citing specific numbers" } } } },
-                consensus: { type: "string", enum: ["bullish", "bearish", "neutral"] },
-                confidence: { type: "number" },
-                scenarios: { type: "array", items: { type: "object", required: ["name", "probability", "description"], properties: { name: { type: "string" }, probability: { type: "number" }, description: { type: "string" } } } },
-                plan: { type: "object", required: ["bias", "entryZone", "invalidation", "targets"], properties: { bias: { type: "string" }, entryZone: { type: "string" }, invalidation: { type: "string" }, targets: { type: "string" } } },
-                dissent: { type: "string" }, disclaimer: { type: "string" },
-              },
-            },
-          },
-        }],
-        tool_choice: { type: "function", function: { name: "verdict" } },
+        model: "openai/gpt-6-astra",
+        stream: true,
+        store: false,
+        reasoning: { effort: "low" },
+        instructions: system + " Confidence values are 0-100; scenario probabilities sum to ~100. Each member's reasoning is 1-2 sentences citing specific numbers.",
+        input: [{ role: "user", content: JSON.stringify(data) }],
+        text: { format: { type: "json_schema", name: "verdict", strict: true, schema } },
       }),
     });
     if (res.status === 429) throw new Error("AI rate limit reached — try again in a minute.");
     if (res.status === 402) throw new Error("AI credits exhausted — add credits in workspace settings.");
-    if (!res.ok) throw new Error(`AI request failed [${res.status}]: ${await res.text()}`);
-    const j = await res.json();
-    const args = j.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (!res.ok || !res.body) throw new Error(`AI request failed [${res.status}]: ${await res.text()}`);
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "", args = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const ev = JSON.parse(payload);
+          if (ev.type === "response.output_text.delta") args += ev.delta;
+          if (ev.type === "response.failed" || ev.type === "error") throw new Error(JSON.stringify(ev.response?.error ?? ev.error ?? ev));
+        } catch (e) { if (e instanceof Error && !(e instanceof SyntaxError)) throw e; }
+      }
+    }
     if (!args) throw new Error("Council returned no verdict");
     return JSON.parse(args) as CouncilVerdict;
   });
