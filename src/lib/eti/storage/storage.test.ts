@@ -77,12 +77,16 @@ describe("SQL migrations", () => {
     const { join } = await import("node:path");
     const dir = mkdtempSync(join(tmpdir(), "eti-"));
     const file = join(dir, "t.db");
-    const a = new SqlStore("sqlite", sqliteDriver(new DatabaseSync(file)));
+    const dbA = new DatabaseSync(file);
+    const a = new SqlStore("sqlite", sqliteDriver(dbA));
     await a.migrate();
     await a.put("orders", "o1", { ok: true });
-    const b = new SqlStore("sqlite", sqliteDriver(new DatabaseSync(file)));
+    dbA.close();
+    const dbB = new DatabaseSync(file);
+    const b = new SqlStore("sqlite", sqliteDriver(dbB));
     await b.migrate();
     expect((await b.get<{ ok: boolean }>("orders", "o1"))?.data.ok).toBe(true);
+    dbB.close(); // Windows cannot delete a database file that is still open
     rmSync(dir, { recursive: true, force: true });
   });
 });
